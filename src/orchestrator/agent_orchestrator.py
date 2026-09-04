@@ -671,6 +671,7 @@ class AgentOrchestrator:
             lines.append(f"Existing clusters: {len(leaderboard.clusters)}")
         lines.extend(
             [
+                f"Capability profile: {cfg.capability_profile}",
                 f"Population size: {cfg.population_size}",
                 f"Number of ideas: {cfg.num_ideas}",
                 f"Generations: {cfg.num_generations}",

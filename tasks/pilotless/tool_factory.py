@@ -19,14 +19,25 @@ class ToolFactory(ToolProvider):
     def __init__(self, tools_config: ToolsConfig, *,
                  eval_tool: EvalToolBase, higher_is_better: bool):
         cfg = tools_config.sionna_doc_config
+        planetary_cfg = cfg.get("planetary_6g_config", {})
+        use_planetary_profile = planetary_cfg.get("enabled", False)
+
+        retrieve_k = cfg["retrieve_k"]
+        rerank_top_n = cfg["rerank_top_n"]
+        cache_dir = cfg["cache_dir_path"]
+        if use_planetary_profile:
+            retrieve_k = planetary_cfg.get("retrieve_k", retrieve_k)
+            rerank_top_n = planetary_cfg.get("rerank_top_n", rerank_top_n)
+            cache_dir = planetary_cfg.get("cache_dir_path", cache_dir)
+
         self.sionna_doc = SionnaDoc(
             embedding_model=cfg["embedding_model"],
             embedding_base_url=cfg["embedding_base_url"],
             reranker_model=cfg["reranker_model"],
             reranker_base_url=cfg["reranker_base_url"],
-            retrieve_k=cfg["retrieve_k"],
-            rerank_top_n=cfg["rerank_top_n"],
-            cache_dir=cfg["cache_dir_path"],
+            retrieve_k=retrieve_k,
+            rerank_top_n=rerank_top_n,
+            cache_dir=cache_dir,
         )
         self._workspace = None
 

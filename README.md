@@ -49,6 +49,45 @@ Enabling the [Sionna documentation](#sionna-documentation) search tool requires 
 * Reranker model: `reranker_model` and `reranker_base_url` under `tools_config.sionna_doc_config`. We used [ms-marco-MiniLM-L6-v2](https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2).
 * Summarization LLM: `model` and `base_url` under `tools_config.sionna_doc_config.summarize_llm`. We used GPT-5.5 with "low" reasoning effort.
 
+## 6G Planetary advanced configuration
+
+Both built-in tasks now support the reusable capability profile:
+
+* `capability_profile: "planetary_6g_advanced"`
+
+This profile enables an advanced orchestration/tooling baseline for 6G Planetary runs:
+
+* Manager LLM reasoning defaults to high effort (`manager_llm.model_kwargs.reasoning_effort`).
+* Worker LLM reasoning defaults to medium effort (`agent_llm.model_kwargs.reasoning_effort`).
+* Sionna tutorial summarization defaults to low effort (`tools_config.sionna_doc_config.summarize_llm.model_kwargs.reasoning_effort`).
+* Large-scale search defaults are applied (`num_workers`, `num_gpus`, `population_size`, `num_ideas`, `num_generations`, `result_processing_concurrency`, `num_off_front_candidates`, `off_front_temperature`).
+* Prompt refinement is enabled by default (`enable_prompt_refinement: true`).
+* Higher evaluation and post-tuning budgets are enabled (`tools_config.eval_timeout`, `hyperparameter_tuner.*`, container memory/pids limits).
+* Planetary retrieval profile is enabled for Sionna docs via `tools_config.sionna_doc_config.planetary_6g_config.enabled`.
+
+### Required user-provided endpoints and models
+
+Before launching, replace all placeholder values in each task's `config.json`:
+
+* `agent_llm.base_url`
+* `manager_llm.base_url`
+* `tools_config.sionna_doc_config.embedding_model`
+* `tools_config.sionna_doc_config.embedding_base_url`
+* `tools_config.sionna_doc_config.reranker_model`
+* `tools_config.sionna_doc_config.reranker_base_url`
+* `tools_config.sionna_doc_config.summarize_llm.base_url`
+
+Set `MODEL_API_KEY` for LLM access if required by your endpoints.
+
+### Smoke validation (without launching workers)
+
+Use the launcher's validation mode to verify config/module wiring for a task:
+
+```bash
+python launch.py tasks/otfs_detector --validate-config-only
+python launch.py tasks/pilotless --validate-config-only
+```
+
 ## Launching tasks
 
 If accessing the configured LLMs requires an API key, set it as an environment variable:

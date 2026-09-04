@@ -13,6 +13,90 @@ from typing import Any, Optional, Union
 PROJECT_ROOT = Path(__file__).parent.parent
 
 
+CAPABILITY_PROFILES: dict[str, dict[str, Any]] = {
+    "planetary_6g_advanced": {
+        "agent_llm": {
+            "temperature": 0.9,
+            "top_p": 1.0,
+            "model_kwargs": {"reasoning_effort": "medium"},
+        },
+        "manager_llm": {
+            "temperature": 0.2,
+            "top_p": 1.0,
+            "model_kwargs": {"reasoning_effort": "high"},
+        },
+        "workspace": {
+            "container": {
+                "memory_limit": "32g",
+                "pids_limit": 4096,
+                "use_gpu": True,
+            }
+        },
+        "hyperparameter_tuner": {
+            "n_trials": 60,
+            "timeout": 3600,
+        },
+        "tools_config": {
+            "eval_timeout": 600,
+            "sionna_doc_config": {
+                "cache_dir_path": "api_doc_cache",
+                "retrieve_k": 20,
+                "rerank_top_n": 8,
+                "planetary_6g_config": {
+                    "enabled": True,
+                    "retrieve_k": 20,
+                    "rerank_top_n": 8,
+                    "cache_dir_path": "api_doc_cache_planetary_6g",
+                },
+                "summarize_llm": {
+                    "temperature": 0.2,
+                    "top_p": 1.0,
+                    "model_kwargs": {"reasoning_effort": "low"},
+                },
+            },
+        },
+        "num_workers": 16,
+        "num_gpus": 16,
+        "population_size": 32,
+        "num_generations": 300,
+        "num_ideas": 16,
+        "timeout": 1800,
+        "task_submit_delay": 0.0,
+        "result_processing_concurrency": -1,
+        "enable_prompt_refinement": True,
+        "num_off_front_candidates": 16,
+        "off_front_temperature": 0.35,
+    }
+}
+
+
+def _deep_merge_dict(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+    """Recursively merge overlay into base and return base."""
+    for key, value in overlay.items():
+        if isinstance(value, dict) and isinstance(base.get(key), dict):
+            _deep_merge_dict(base[key], value)
+        else:
+            base[key] = value
+    return base
+
+
+def _apply_capability_profile(config_data: dict[str, Any]) -> dict[str, Any]:
+    """Apply an optional capability profile while preserving explicit overrides."""
+    profile_name = config_data.get("capability_profile")
+    if not profile_name:
+        return config_data
+
+    if profile_name not in CAPABILITY_PROFILES:
+        supported = ", ".join(sorted(CAPABILITY_PROFILES))
+        raise ValueError(
+            f"Unknown capability_profile '{profile_name}'. "
+            f"Supported values: {supported}"
+        )
+
+    defaults = deepcopy(CAPABILITY_PROFILES[profile_name])
+    return _deep_merge_dict(defaults, config_data)
+
+
 @dataclass
 class LLMConfig:
     """Configuration for creating an LLM instance."""
@@ -129,6 +213,7 @@ class Config:
     """Configuration for the agent manager and optimization run."""
 
     # LLM configuration: both required (use LLMConfig for each)
+    capability_profile: str = "default"
     agent_llm: LLMConfig = field(default_factory=LLMConfig)   # Used by agents (workers)
     manager_llm: LLMConfig = field(default_factory=LLMConfig)  # Used by manager (ideas, summaries)
 
@@ -195,6 +280,7 @@ def load_config(config_path: Union[str, Path]) -> Config:
         lines = f.readlines()
         clean_lines = [line for line in lines if not line.strip().startswith("//")]
         data = json.loads("".join(clean_lines))
+    data = _apply_capability_profile(data)
 
     # Get API key from environment variable (required)
     api_key = os.environ.get("MODEL_API_KEY")
@@ -267,6 +353,7 @@ def load_config(config_path: Union[str, Path]) -> Config:
     )
 
     return Config(
+        capability_profile=data.get("capability_profile", Config.capability_profile),
         agent_llm=agent_llm,
         manager_llm=manager_llm,
         workspace=workspace,

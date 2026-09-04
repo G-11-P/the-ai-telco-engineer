@@ -1,59 +1,34 @@
 {
+  "capability_profile": "planetary_6g_advanced",
   "workspace": {
     "container": {
       "docker_image": "agent_otfs_detector",
-      "dockerfile_path": "docker/dockerfile_agent_container",
-      "pids_limit": 4096,
-      "use_gpu": true
+      "dockerfile_path": "docker/dockerfile_agent_container"
     }
   },
-  "hyperparameter_tuner": {
-    "n_trials": 30,
-    "timeout": 1200
-  },
   "tools_config": {
-    "eval_timeout": 300,
     "sionna_doc_config": {
-      "cache_dir_path": "api_doc_cache",
-      "embedding_model": "",
-      "embedding_base_url": "",
-      "reranker_model": "",
-      "reranker_base_url": "",
-      "retrieve_k": 12,
-      "rerank_top_n": 4,
+      "embedding_model": "<set-embedding-model>",
+      "embedding_base_url": "<set-embedding-base-url>",
+      "reranker_model": "<set-reranker-model>",
+      "reranker_base_url": "<set-reranker-base-url>",
+      "planetary_6g_config": {
+        "enabled": true
+      },
       "summarize_llm": {
-        "model": "",
-        "base_url": "",
-        "temperature": 1.0,
-        "top_p": 1.0,
-        "model_kwargs": { }
+        "model": "gpt-5.5",
+        "base_url": "<set-summarize-llm-base-url>"
       }
     }
   },
-  "num_workers": 16,
   "higher_is_better": false,
-  "population_size": 32,
-  "num_generations": 300,
-  "timeout": 1800,
-  "task_submit_delay": 0.0,
-  "top_k_summaries": 20,
-  "top_k_temperature": 1.0,
   "prompt_path": "prompt.md",
-  "num_ideas": 16,
-  "num_gpus": 16,
-  "enable_prompt_refinement": true,
   "agent_llm": {
-    "model": "",
-    "base_url": "",
-    "temperature": 1.0,
-    "top_p": 1.0,
-    "model_kwargs": { }
+    "model": "gpt-5.5",
+    "base_url": "<set-agent-llm-base-url>"
   },
   "manager_llm": {
-    "model": "",
-    "base_url": "",
-    "temperature": 1.0,
-    "top_p": 1.0,
-    "model_kwargs": { }
+    "model": "gpt-5.5",
+    "base_url": "<set-manager-llm-base-url>"
   }
 }
