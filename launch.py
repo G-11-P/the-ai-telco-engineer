@@ -106,6 +106,13 @@ Example:
         type=str,
         help="Path to the task folder containing config.json and eval_tool.py"
     )
+    parser.add_argument(
+        "--validate-config-only",
+        action="store_true",
+        help=(
+            "Validate task config/module wiring and exit without launching workers."
+        ),
+    )
     args = parser.parse_args()
 
     # Resolve task folder path
@@ -119,7 +126,11 @@ Example:
     if not config_path.exists():
         printer.error(f"Error: config.json not found in {task_folder}")
         sys.exit(1)
-    config = load_config(config_path)
+    try:
+        config = load_config(config_path)
+    except Exception as e:
+        printer.error(f"Error while loading config: {e}")
+        sys.exit(1)
 
     printer.init(config.logging_config, None, "LAUNCHER")
 
@@ -139,6 +150,10 @@ Example:
     printer.info(f"Eval tool: {EvalTool.__name__}")
     if ToolFactory:
         printer.info(f"Tool factory: {ToolFactory.__name__}")
+
+    if args.validate_config_only:
+        printer.info("Validation successful. Exiting without launching workers.")
+        return
 
     # Create and run agent orchestrator
     orchestrator = AgentOrchestrator(

@@ -97,6 +97,67 @@ def test_load_config_reads_result_processing_concurrency(tmp_path, monkeypatch):
     assert cfg.result_processing_concurrency == 3
 
 
+def test_load_config_applies_planetary_advanced_profile_defaults(tmp_path, monkeypatch):
+    monkeypatch.setenv("MODEL_API_KEY", "test-key")
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "capability_profile": "planetary_6g_advanced",
+                "agent_llm": {
+                    "model": "agent-model",
+                    "base_url": "http://llm",
+                },
+                "manager_llm": {
+                    "model": "manager-model",
+                    "base_url": "http://llm",
+                },
+                "workspace": {
+                    "container": {
+                        "docker_image": "python:3.12-slim",
+                        "dockerfile_path": "Dockerfile",
+                    }
+                },
+            }
+        )
+    )
+
+    cfg = load_config(config_path)
+
+    assert cfg.capability_profile == "planetary_6g_advanced"
+    assert cfg.num_workers == 16
+    assert cfg.num_gpus == 16
+    assert cfg.num_generations == 300
+    assert cfg.enable_prompt_refinement is True
+    assert cfg.result_processing_concurrency == -1
+    assert cfg.tools_config.get("eval_timeout") == 600
+    assert cfg.agent_llm.model_kwargs.get("reasoning_effort") == "medium"
+    assert cfg.manager_llm.model_kwargs.get("reasoning_effort") == "high"
+
+
+def test_load_config_rejects_unknown_capability_profile(tmp_path, monkeypatch):
+    monkeypatch.setenv("MODEL_API_KEY", "test-key")
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "capability_profile": "unknown_profile",
+                "agent_llm": {"model": "agent-model", "base_url": "http://llm"},
+                "manager_llm": {"model": "manager-model", "base_url": "http://llm"},
+                "workspace": {
+                    "container": {
+                        "docker_image": "python:3.12-slim",
+                        "dockerfile_path": "Dockerfile",
+                    }
+                },
+            }
+        )
+    )
+
+    with pytest.raises(ValueError, match="Unknown capability_profile"):
+        load_config(config_path)
+
+
 def test_generation_post_processing_runs_in_parallel_and_saves_once(tmp_path):
     orch = object.__new__(AgentOrchestrator)
     orch.config = Config(result_processing_concurrency=-1)
